@@ -1,10 +1,13 @@
 {
   "name": "nodemiral-mongodb",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Nodemiral taskLists for MongoDB",
   "main": "index.js",
   "dependencies": {
     "nodemiral": "0.3.x"
   },
-  "keywords": ["nodemiral", "mongodb"]
+  "keywords": [
+    "nodemiral",
+    "mongodb"
+  ]
 }
