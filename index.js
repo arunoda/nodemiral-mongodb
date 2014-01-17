@@ -73,9 +73,9 @@ exports.configure = function(vars, taskListOptions) {
     vars: { replSet: true, profile: vars.profile }
   });
 
-  //start mongodb
+  //restart mongodb
   taskList.execute('ensure start', {
-    command: "sudo start mongodb || :"
+    command: "(sudo stop mongodb || :) && sudo start mongodb"
   });
 
   var users = {};
