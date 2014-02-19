@@ -1,0 +1,20 @@
+{
+  "name": "nodemiral-mongodb",
+  "version": "0.1.1",
+  "description": "MongoDB packaged for nodemiral with replicaSet support",
+  "main": "index.js",
+  "dependencies": {
+    "nodemiral": "0.3.x"
+  },
+  "keywords": [
+    "nodemiral",
+    "mongodb"
+  ],
+  "readme": "ERROR: No README data found!",
+  "_id": "nodemiral-mongodb@0.1.1",
+  "dist": {
+    "shasum": "6edad2f2980575ca919bd8271080609abf05d3fa"
+  },
+  "_from": "nodemiral-mongodb@*",
+  "_resolved": "https://registry.npmjs.org/nodemiral-mongodb/-/nodemiral-mongodb-0.1.1.tgz"
+}
