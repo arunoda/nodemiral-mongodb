@@ -27,7 +27,7 @@ exports.install = function(vars, taskListOptions) {
 };
 
 exports.configure = function(vars, taskListOptions) {
-  var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
+  var taskList = nodemiral.taskList("MongoDB Configurations", taskListOptions);
   var mongoOptions = vars.options || {};
 
   //setting the keyFile
@@ -46,6 +46,28 @@ exports.configure = function(vars, taskListOptions) {
 
   //restart
   taskList.execute('restart mongodb', getRestartTask());
+
+  return taskList;
+};
+
+exports.configureReplSet = function(vars, taskListOptions) {
+  var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
+
+  taskList.copy('copy replSet configuration script', {
+    src: path.resolve(__dirname, 'scripts/configure_replset.js'),
+    dest: '/tmp/configure_replset.js',
+    vars: {
+      replSet: vars.replSet,
+      members: vars.members
+    }
+  });
+
+  taskList.executeScript('configuring the replSet', {
+    script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
+    vars: {
+      adminPass: vars.adminPass
+    }
+  });
 
   return taskList;
 };

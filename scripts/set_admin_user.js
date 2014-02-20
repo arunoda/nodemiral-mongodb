@@ -2,5 +2,5 @@ var db = db.getSiblingDB('admin');
 db.addUser({
   user: 'admin',
   pwd: '<%= adminPass %>',
-  roles: ['clusterAdmin', 'userAdminAnyDatabase']
+  roles: ['clusterAdmin', 'userAdminAnyDatabase', 'dbAdmin', 'userAdmin', 'readWriteAnyDatabase', 'dbAdminAnyDatabase']
 });
