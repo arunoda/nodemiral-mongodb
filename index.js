@@ -95,16 +95,33 @@ exports.setUsers = function(vars, taskListOptions) {
     }
   });
 
+  taskList.executeScript('setting users', {
+    script: path.resolve(__dirname, 'scripts/set_users.sh'),
+    vars: {
+      replSetPrimaryHost: "{{replSetPrimaryHost}}",
+      adminPass: vars.adminPass
+    }
+  });
+
+  var getPrimaryHost = exports.getPrimaryHost(vars, taskListOptions);
+  return getPrimaryHost.concat([taskList]);
+};
+
+exports.getPrimaryHost = function(vars, taskListOptions) {
+  var taskList = nodemiral.taskList("Pick Primary", taskListOptions);
+
   taskList.copy('copy pick_primary.js', {
     src: path.resolve(__dirname, 'scripts/pick_primary.js'),
     dest: '/tmp/pick_primary.js'
   });
 
-  taskList.executeScript('setting users', {
-    script: path.resolve(__dirname, 'scripts/set_users.sh'),
+  taskList.executeScript('picking the primary', {
+    script: path.resolve(__dirname, 'scripts/pick_primary.sh'),
     vars: {
       adminPass: vars.adminPass
     }
+  }, function(stdout, stderr) {
+    this.replSetPrimaryHost = stdout.match(/primaryMongoHost:(.*);;/)[1];
   });
 
   return taskList;
