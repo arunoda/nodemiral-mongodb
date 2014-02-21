@@ -72,6 +72,44 @@ exports.configureReplSet = function(vars, taskListOptions) {
   return taskList;
 };
 
+exports.setUsers = function(vars, taskListOptions) {
+  var taskList = nodemiral.taskList("Set Users", taskListOptions);
+
+  var users = [];
+
+  vars.users.forEach(function(user) {
+    users.push({
+      username: user.username,
+      db: user.db,
+      password: user.password, 
+      roles: user.roles
+    });
+  });
+
+  taskList.copy('copy set_users.js', {
+    src: path.resolve(__dirname, 'scripts/set_users.js'),
+    dest: '/tmp/set_users.js',
+    vars: {
+      users: users,
+      adminPass: vars.adminPass
+    }
+  });
+
+  taskList.copy('copy pick_primary.js', {
+    src: path.resolve(__dirname, 'scripts/pick_primary.js'),
+    dest: '/tmp/pick_primary.js'
+  });
+
+  taskList.executeScript('setting users', {
+    script: path.resolve(__dirname, 'scripts/set_users.sh'),
+    vars: {
+      adminPass: vars.adminPass
+    }
+  });
+
+  return taskList;
+};
+
 function getRestartTask() {
   return {
     command: "(sudo stop mongodb || :) && sudo start mongodb"
