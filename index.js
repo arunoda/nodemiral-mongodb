@@ -104,7 +104,7 @@ exports.setUsers = function(vars, taskListOptions) {
   });
 
   var getPrimaryHost = exports.getPrimaryHost(vars, taskListOptions);
-  return getPrimaryHost.concat([taskList]);
+  return getPrimaryHost.concat([taskList], taskList._name);
 };
 
 exports.getPrimaryHost = function(vars, taskListOptions) {
