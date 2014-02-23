@@ -97,16 +97,28 @@ exports.setUsers = function(vars, taskListOptions) {
     }
   });
 
-  taskList.executeScript('setting users', {
-    script: path.resolve(__dirname, 'scripts/set_users.sh'),
-    vars: {
-      dbHost: "{{replSetPrimaryHost}}",
-      adminPass: vars.adminPass
-    }
-  });
+  if(vars.targetPrimary) {
+    taskList.executeScript('setting users', {
+      script: path.resolve(__dirname, 'scripts/set_users.sh'),
+      vars: {
+        dbHost: "{{replSetPrimaryHost}}",
+        adminPass: vars.adminPass
+      }
+    });
 
-  var getPrimaryHost = exports.getPrimaryHost(vars, taskListOptions);
-  return getPrimaryHost.concat([taskList], taskList._name);
+    var getPrimaryHost = exports.getPrimaryHost(vars, taskListOptions);
+    return getPrimaryHost.concat([taskList], taskList._name);
+  } else {
+    taskList.executeScript('setting users', {
+      script: path.resolve(__dirname, 'scripts/set_users.sh'),
+      vars: {
+        dbHost: "127.0.0.1",
+        adminPass: vars.adminPass
+      }
+    });
+
+    return taskList;
+  }
 };
 
 exports.getPrimaryHost = function(vars, taskListOptions) {
