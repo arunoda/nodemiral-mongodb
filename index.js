@@ -2,6 +2,7 @@ var nodemiral = require('nodemiral');
 var path = require('path');
 
 exports.install = function(vars, taskListOptions) {
+  vars = vars || {}
   var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
 
   // Installation
@@ -13,15 +14,17 @@ exports.install = function(vars, taskListOptions) {
   taskList.execute('restart mongodb', getRestartTask());
 
   // Create Admin User
-  taskList.copy('copy script for admin user creation', {
-    src: path.resolve(__dirname, 'scripts/set_admin_user.js'),
-    dest: '/tmp/set_admin_user.js',
-    vars: {adminPass: vars.adminPass}
-  });
+  if(vars.adminPass) {
+    taskList.copy('copy script for admin user creation', {
+      src: path.resolve(__dirname, 'scripts/set_admin_user.js'),
+      dest: '/tmp/set_admin_user.js',
+      vars: {adminPass: vars.adminPass}
+    });
 
-  taskList.executeScript('create admin user', {
-    script: path.resolve(__dirname, 'scripts/set_admin_user.sh')
-  });
+    taskList.executeScript('create admin user', {
+      script: path.resolve(__dirname, 'scripts/set_admin_user.sh')
+    });
+  }
 
   return taskList;
 };
@@ -90,15 +93,14 @@ exports.setUsers = function(vars, taskListOptions) {
     src: path.resolve(__dirname, 'scripts/set_users.js'),
     dest: '/tmp/set_users.js',
     vars: {
-      users: users,
-      adminPass: vars.adminPass
+      users: users
     }
   });
 
   taskList.executeScript('setting users', {
     script: path.resolve(__dirname, 'scripts/set_users.sh'),
     vars: {
-      replSetPrimaryHost: "{{replSetPrimaryHost}}",
+      dbHost: "{{replSetPrimaryHost}}",
       adminPass: vars.adminPass
     }
   });
@@ -154,3 +156,5 @@ function getConfigFileTask (options) {
     }
   }
 }
+
+exports.ALL_ROLES = ['clusterAdmin', 'userAdminAnyDatabase', 'dbAdmin', 'userAdmin', 'readWriteAnyDatabase', 'dbAdminAnyDatabase'];
