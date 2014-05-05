@@ -1,5 +1,5 @@
 #start mongodb
-sudo start mongodb || :
+sudo start mongod || :
 
 PRIMARY_MONGO_HOST=""
 

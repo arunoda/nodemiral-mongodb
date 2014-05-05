@@ -11,7 +11,7 @@ exports.install = function(vars, taskListOptions) {
   });
 
   taskList.copy('copy mongodb configuration', getConfigFileTask({auth: true}));
-  taskList.execute('restart mongodb', getRestartTask());
+  taskList.execute('restart mongod', getRestartTask());
 
   // Create Admin User
   if(vars.adminPass) {
@@ -48,7 +48,7 @@ exports.configure = function(vars, taskListOptions) {
   taskList.copy('copy mongodb configuration', getConfigFileTask(mongoOptions));
 
   //restart
-  taskList.execute('restart mongodb', getRestartTask());
+  taskList.execute('restart mongod', getRestartTask());
 
   return taskList;
 };
@@ -97,7 +97,7 @@ exports.setUsers = function(vars, taskListOptions) {
     }
   });
 
-  if(vars.targetPrimary) {
+  if(vars.pickPrimary) {
     taskList.executeScript('setting users', {
       script: path.resolve(__dirname, 'scripts/set_users.sh'),
       vars: {
@@ -143,7 +143,7 @@ exports.getPrimaryHost = function(vars, taskListOptions) {
 
 function getRestartTask() {
   return {
-    command: "(sudo stop mongodb || :) && sudo start mongodb"
+    command: "(sudo stop mongod || :) && sudo start mongod"
   };
 }
 
@@ -162,7 +162,7 @@ function getConfigFileTask (options) {
 
   return {
     src: path.resolve(__dirname, 'templates/mongodb.conf'),
-    dest: '/etc/mongodb.conf',
+    dest: '/etc/mongod.conf',
     vars: {
       options: mongoOptions
     }

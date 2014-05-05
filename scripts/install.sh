@@ -35,19 +35,26 @@ EOF
 source ~/.profile || :
 
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/10gen.list
+echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
 sudo apt-get update -y
-sudo apt-get install mongodb-10gen=2.4.6
+sudo apt-get install mongodb-org=2.6.0 mongodb-org-server=2.6.0 mongodb-org-shell=2.6.0 mongodb-org-mongos=2.6.0 mongodb-org-tools=2.6.0 -y
+
+# hold the mongodb at 2.6
+echo "mongodb-org hold" | sudo dpkg --set-selections
+echo "mongodb-org-server hold" | sudo dpkg --set-selections
+echo "mongodb-org-shell hold" | sudo dpkg --set-selections
+echo "mongodb-org-mongos hold" | sudo dpkg --set-selections
+echo "mongodb-org-tools hold" | sudo dpkg --set-selections
 
 #set db permissions
 sudo chown -R mongodb $MONGO_DIR
 
 # delete data directory
-sudo stop mongodb || :
+sudo stop mongod || :
 
 # install nodejs
 ARCH=`uname -m`
-NODE_VERSION=0.10.26
+NODE_VERSION=0.10.28
 if [[ $ARCH == 'x86_64' ]]; then
   NODE_ARCH=x64
 else

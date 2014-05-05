@@ -1,7 +1,7 @@
 set -e
 
 #ensure db is started
-sudo start mongodb || :
+sudo start mongod || :
 
 wait-for-mongo mongodb://admin:<%= adminPass%>@127.0.0.1/admin
 

@@ -6,8 +6,8 @@ var BASE_DB = db;
 
 function createUser(username, dbname, password, roles) {
   var db = BASE_DB.getSiblingDB(dbname);
-  db.removeUser(username);
-  db.addUser({
+  db.dropUser(username);
+  db.createUser({
     user: username,
     pwd : password,
     roles: roles
