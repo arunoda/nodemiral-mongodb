@@ -1,7 +1,7 @@
 var db = db.getSiblingDB('admin');
 var userExists = db.getUser('admin');
 
-if(userExists) {
+if(!userExists) {
   db.createUser({
     user: 'admin',
     pwd: '<%= adminPass %>',
