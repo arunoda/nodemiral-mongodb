@@ -26,18 +26,24 @@ sudo apt-get install language-pack-en-base -y
 sudo dpkg-reconfigure locales
 
 cat >> ~/.profile << EOF
-# Fix for locale issues when connecting to AWS Ubuntu instances over SSH 
+# Fix for locale issues when connecting to AWS Ubuntu instances over SSH
 export LANG="en_GB.utf-8"
 export LANGUAGE="en_GB.utf-8"
 export LC_ALL="en_GB.utf-8"
 EOF
 
 source ~/.profile || :
+MONGO_VERSION=<%= version %>
 
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
 echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
 sudo apt-get update -y
-sudo apt-get install mongodb-org=2.6.4 mongodb-org-server=2.6.4 mongodb-org-shell=2.6.4 mongodb-org-mongos=2.6.4 mongodb-org-tools=2.6.4 -y
+sudo apt-get install -y \
+  mongodb-org=$MONGO_VERSION \
+  mongodb-org-server=$MONGO_VERSION \
+  mongodb-org-shell=$MONGO_VERSION \
+  mongodb-org-mongos=$MONGO_VERSION \
+  mongodb-org-tools=$MONGO_VERSION
 
 # hold the mongodb at 2.6
 echo "mongodb-org hold" | sudo dpkg --set-selections

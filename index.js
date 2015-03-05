@@ -3,11 +3,13 @@ var path = require('path');
 
 exports.install = function(vars, taskListOptions) {
   vars = vars || {}
+  vars.version = vars.version || "3.0.0";
   var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
 
   // Installation
   taskList.executeScript('install', {
-    script: path.resolve(__dirname, 'scripts/install.sh')
+    script: path.resolve(__dirname, 'scripts/install.sh'),
+    vars: _.pick(vars, "version");
   });
 
   taskList.copy('copy mongodb configuration', getConfigFileTask({auth: true}));
@@ -84,7 +86,7 @@ exports.setUsers = function(vars, taskListOptions) {
     users.push({
       username: user.username,
       db: user.db,
-      password: user.password, 
+      password: user.password,
       roles: user.roles
     });
   });
