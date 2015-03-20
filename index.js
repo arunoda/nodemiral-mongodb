@@ -1,18 +1,23 @@
 var nodemiral = require('nodemiral');
 var path = require('path');
+var _ = require('underscore');
 
 exports.install = function(vars, taskListOptions) {
   vars = vars || {}
   vars.version = vars.version || "3.0.0";
+  vars.options = _.clone(vars.options) || {};
   var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
 
   // Installation
   taskList.executeScript('install', {
     script: path.resolve(__dirname, 'scripts/install.sh'),
-    vars: _.pick(vars, "version");
+    vars: {
+      version: vars.version
+    }
   });
 
-  taskList.copy('copy mongodb configuration', getConfigFileTask({auth: true}));
+  vars.options.auth = true;
+  taskList.copy('copy mongodb configuration', getConfigFileTask(vars.options));
   taskList.execute('restart mongod', getRestartTask());
 
   // Create Admin User
