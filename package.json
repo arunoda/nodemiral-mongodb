@@ -1,6 +1,6 @@
 {
   "name": "nodemiral-mongodb",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "MongoDB packaged for nodemiral with replicaSet support",
   "main": "index.js",
   "dependencies": {
