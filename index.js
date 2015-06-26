@@ -6,18 +6,20 @@ exports.install = function(vars, taskListOptions) {
   vars = vars || {}
   vars.version = vars.version || "3.0.0";
   vars.options = _.clone(vars.options) || {};
+  vars.options.version = vars.version;
   var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
 
   // Installation
   taskList.executeScript('install', {
     script: path.resolve(__dirname, 'scripts/install.sh'),
     vars: {
-      version: vars.version
+      version: vars.version,
+      dbpath: vars.options.dbpath || '/opt/nodemiral/mongodb/db'
     }
   });
 
   vars.options.auth = true;
-  taskList.copy('copy mongodb configuration', getConfigFileTask(vars.options));
+  addConfigFile(taskList, vars.options);
   taskList.execute('restart mongod', getRestartTask());
 
   // Create Admin User
@@ -52,7 +54,7 @@ exports.configure = function(vars, taskListOptions) {
   }
 
   //add production mongodb configuration
-  taskList.copy('copy mongodb configuration', getConfigFileTask(mongoOptions));
+  addConfigFile(taskList, mongoOptions);
 
   //restart
   taskList.execute('restart mongod', getRestartTask());
@@ -154,7 +156,7 @@ function getRestartTask() {
   };
 }
 
-function getConfigFileTask (options) {
+function addConfigFile(taskList, options) {
   options = options || {};
   var mongoOptions = {
     dbpath: '/opt/nodemiral/mongodb/db',
@@ -167,13 +169,21 @@ function getConfigFileTask (options) {
     mongoOptions[key] = options[key];
   }
 
-  return {
+  taskList.copy('copy mongodb configuration', {
     src: path.resolve(__dirname, 'templates/mongodb.conf'),
-    dest: '/etc/mongod.conf',
+    dest: '/tmp/mongod.conf',
     vars: {
       options: mongoOptions
     }
-  }
+  });
+
+  taskList.execute('move mongodb configuration', {
+    command: "sudo mv /tmp/mongod.conf /etc/mongod.conf"
+  });
+
+  taskList.execute('chown dbpath', {
+    command: "sudo chown mongodb " + mongoOptions.dbpath
+  });
 }
 
 exports.ALL_ROLES = ['clusterAdmin', 'userAdminAnyDatabase', 'dbAdmin', 'userAdmin', 'readWriteAnyDatabase', 'dbAdminAnyDatabase'];

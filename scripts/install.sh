@@ -4,7 +4,7 @@ set -e
 ## Check previous DB existance
 
 MONGO_DIR=/opt/nodemiral/mongodb
-DB_PATH=$MONGO_DIR/db
+DB_PATH=<%= dbpath %>
 sudo mkdir -p $DB_PATH
 
 #donot proceed if, data directory is not empty
