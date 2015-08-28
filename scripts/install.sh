@@ -55,6 +55,7 @@ echo "mongodb-org-mongos hold" | sudo dpkg --set-selections
 echo "mongodb-org-tools hold" | sudo dpkg --set-selections
 
 #set db permissions
+sudo mkdir -p $MONGO_DIR
 sudo chown -R mongodb $MONGO_DIR
 
 # delete data directory
