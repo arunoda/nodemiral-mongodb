@@ -84,14 +84,28 @@ exports.configureReplSet = function(vars, taskListOptions) {
     }
   });
 
-  taskList.executeScript('configuring the replSet', {
-    script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
-    vars: {
-      adminPass: vars.adminPass
-    }
-  });
+  if(vars.pickPrimary) {
+    taskList.executeScript('configuring the replSet', {
+      script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
+      vars: {
+        adminPass: vars.adminPass,
+        dbHost: "<%= replSetPrimaryHost %>"
+      }
+    });
 
-  return taskList;
+    var getPrimaryHost = exports.getPrimaryHost(vars, taskListOptions);
+    return getPrimaryHost.concat([taskList], taskList._name);
+  } else {
+    taskList.executeScript('configuring the replSet', {
+      script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
+      vars: {
+        adminPass: vars.adminPass,
+        dbHost: "127.0.0.1"
+      }
+    });
+
+    return taskList;
+  }
 };
 
 exports.setUsers = function(vars, taskListOptions) {
@@ -120,7 +134,7 @@ exports.setUsers = function(vars, taskListOptions) {
     taskList.executeScript('setting users', {
       script: path.resolve(__dirname, 'scripts/set_users.sh'),
       vars: {
-        dbHost: "{{replSetPrimaryHost}}",
+        dbHost: "<%= replSetPrimaryHost %>",
         adminPass: vars.adminPass
       }
     });
