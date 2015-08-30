@@ -6,7 +6,8 @@ exports.install = function(vars, taskListOptions) {
   vars = vars || {}
   vars.version = vars.version || "3.0.0";
   vars.options = _.clone(vars.options) || {};
-  vars.options.version = vars.version;
+  vars.options.dbpath = vars.options.dbpath || '/opt/nodemiral/mongodb/db';
+
   var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
 
   // Installation
@@ -14,16 +15,19 @@ exports.install = function(vars, taskListOptions) {
     script: path.resolve(__dirname, 'scripts/install.sh'),
     vars: {
       version: vars.version,
-      dbpath: vars.options.dbpath || '/opt/nodemiral/mongodb/db'
+      dbpath: vars.options.dbpath
     }
   });
 
-  vars.options.auth = true;
-  addConfigFile(taskList, vars.options);
-  taskList.execute('restart mongod', getRestartTask());
-
   // Create Admin User
   if(vars.adminPass) {
+    var initialOptions = _.pick(vars.options, "dbpath", "storageEngine");
+    initialOptions.port = 27017;
+    initialOptions.bind_ip = "127.0.0.1";
+
+    addConfigFile(taskList, initialOptions);
+    taskList.execute('restart mongod', getRestartTask());
+
     taskList.copy('copy script for admin user creation', {
       src: path.resolve(__dirname, 'scripts/set_admin_user.js'),
       dest: '/tmp/set_admin_user.js',
@@ -35,16 +39,22 @@ exports.install = function(vars, taskListOptions) {
     });
   }
 
+  // After the adminPass (set) if needed, we can add auth support and reload  
+  vars.options.auth = true;
+  addConfigFile(taskList, vars.options);
+  taskList.execute('restart mongod', getRestartTask());
+
   return taskList;
 };
 
 exports.configure = function(vars, taskListOptions) {
   var taskList = nodemiral.taskList("MongoDB Configurations", taskListOptions);
-  var mongoOptions = vars.options || {};
+  vars.options = vars.options || {};
+  vars.options.dbpath = vars.options.dbpath || '/opt/nodemiral/mongodb/db';
 
   //setting the keyFile
   if(vars.key) {
-    mongoOptions['keyFile'] = "/opt/nodemiral/mongodb/key_file";
+    vars.options['keyFile'] = "/opt/nodemiral/mongodb/key_file";
     taskList.executeScript('create key file', {
       script: path.resolve(__dirname, 'scripts/set_key_file.sh'),
       vars: {
@@ -54,7 +64,7 @@ exports.configure = function(vars, taskListOptions) {
   }
 
   //add production mongodb configuration
-  addConfigFile(taskList, mongoOptions);
+  addConfigFile(taskList, vars.options);
 
   //restart
   taskList.execute('restart mongod', getRestartTask());
@@ -159,9 +169,7 @@ function getRestartTask() {
 function addConfigFile(taskList, options) {
   options = options || {};
   var mongoOptions = {
-    dbpath: '/opt/nodemiral/mongodb/db',
     port: 27017,
-    auth: true,
     nohttpinterface: true
   };
 
@@ -171,14 +179,10 @@ function addConfigFile(taskList, options) {
 
   taskList.copy('copy mongodb configuration', {
     src: path.resolve(__dirname, 'templates/mongodb.conf'),
-    dest: '/tmp/mongod.conf',
+    dest: '/etc/mongod.conf',
     vars: {
       options: mongoOptions
     }
-  });
-
-  taskList.execute('move mongodb configuration', {
-    command: "sudo mv /tmp/mongod.conf /etc/mongod.conf"
   });
 
   taskList.execute('chown dbpath', {
