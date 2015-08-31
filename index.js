@@ -174,6 +174,36 @@ exports.getPrimaryHost = function(vars, taskListOptions) {
   return taskList;
 };
 
+exports.setUpBackupBox = function(vars, taskListOptions) {
+  var taskList = nodemiral.taskList("Setup BackupBox", taskListOptions);
+  taskList.execute('install LVM2', {
+    command: "sudo apt-get install -y lvm2"
+  });
+
+  taskList.executeScript('setting up disks', {
+    script: path.resolve(__dirname, 'scripts/setup_backup_disks.sh'),
+    vars: {
+      dataDisk: vars.dataDisk,
+      backupDisk: vars.backupDisk
+    }
+  });
+
+  var cronjobDest = '/etc/cron.daily/take_snapshot.sh';
+  taskList.execute('setup cronjob permission', {
+    command: "sudo touch " + cronjobDest + " && sudo chown $USER " + cronjobDest
+  });
+
+  taskList.copy("adding snapshot cronjob", {
+    src: path.resolve(__dirname, 'scripts/take_snapshot.sh'),
+    dest: '/etc/cron.daily/take_snapshot.sh',
+    vars: {
+      expireAfter: vars.expireAfter || 5
+    }
+  });
+
+  return taskList;
+};
+
 function getRestartTask() {
   return {
     command: "(sudo stop mongod || :) && sudo start mongod"
