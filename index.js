@@ -4,7 +4,7 @@ var _ = require('underscore');
 
 exports.install = function(vars, taskListOptions) {
   vars = vars || {}
-  vars.version = vars.version || "3.0.0";
+  vars.version = vars.version || "3.0.6";
   vars.options = _.clone(vars.options) || {};
   vars.options.dbpath = vars.options.dbpath || '/opt/nodemiral/mongodb/db';
 
@@ -73,7 +73,7 @@ exports.configure = function(vars, taskListOptions) {
 };
 
 exports.configureReplSet = function(vars, taskListOptions) {
-  var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
+  var taskList = nodemiral.taskList("Configurating Replicaset", taskListOptions);
 
   taskList.copy('copy replSet configuration script', {
     src: path.resolve(__dirname, 'scripts/configure_replset.js'),
@@ -191,12 +191,18 @@ function addConfigFile(taskList, options) {
     mongoOptions[key] = options[key];
   }
 
+  var tempFile = "/tmp/mongodb.conf"; 
+
   taskList.copy('copy mongodb configuration', {
     src: path.resolve(__dirname, 'templates/mongodb.conf'),
-    dest: '/etc/mongod.conf',
+    dest: tempFile,
     vars: {
       options: mongoOptions
     }
+  });
+
+  taskList.execute('set mongodb configuration', {
+    command: "sudo mv " + tempFile + " /etc/mongod.conf"
   });
 
   taskList.execute('chown dbpath', {
