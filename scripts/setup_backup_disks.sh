@@ -23,9 +23,7 @@ sudo mkfs.ext4 /dev/vgbackup/vol0 || :
 
 ## Mounting
 sudo mkdir -p /data
-sudo rm -rf /data/lost+found
 sudo mkdir -p /backup
-sudo rm -rf /backup/lost+found
 
 ## Add mount points
 echo mount /dev/vgdata/vol0 /data > /tmp/rc.local
@@ -34,6 +32,8 @@ sudo mv /tmp/rc.local /etc/rc.local
 
 ## Do the initial mounting
 sudo bash /etc/rc.local || :
+sudo rm -rf /backup/lost+found
+sudo rm -rf /data/lost+found
 
 dataDiskMounted=`df | grep /data`
 if [[ $dataDiskMounted == "" ]]; then
