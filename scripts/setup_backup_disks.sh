@@ -26,9 +26,11 @@ sudo mkdir -p /data
 sudo mkdir -p /backup
 
 ## Add mount points
-echo mount /dev/vgdata/vol0 /data > /tmp/rc.local
+echo "#!/bin/sh -e" > /tmp/rc.local
+echo mount /dev/vgdata/vol0 /data >> /tmp/rc.local
 echo mount /dev/vgbackup/vol0 /backup >> /tmp/rc.local
 sudo mv /tmp/rc.local /etc/rc.local
+sudo chmod +x /etc/rc.local
 
 ## Do the initial mounting
 sudo bash /etc/rc.local || :
