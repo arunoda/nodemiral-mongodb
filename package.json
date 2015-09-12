@@ -4,7 +4,7 @@
   "description": "MongoDB packaged for nodemiral with replicaSet support",
   "main": "index.js",
   "dependencies": {
-    "nodemiral": "0.3.x",
+    "nodemiral": "0.5.0",
     "underscore": "1.8.x"
   },
   "keywords": [

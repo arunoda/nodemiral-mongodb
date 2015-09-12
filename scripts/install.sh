@@ -87,5 +87,5 @@ sudo npm install -g wait-for-mongo
 #initial permission
 sudo chown -R $USER /etc/init
 
-sudo touch /etc/mongodb.conf
-sudo chown $USER /etc/mongodb.conf
+sudo touch /etc/mongod.conf
+sudo chown $USER /etc/mongod.conf

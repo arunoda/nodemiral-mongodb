@@ -25,6 +25,7 @@ function pickPrimary() {
   done
 }
 
+export LC_ALL=C
 # wait for mongo for 10 minutes (need big time for journal setup and for pre-allocate)
 wait-for-mongo mongodb://admin:<%= adminPass %>@localhost/admin  600000
 pickPrimary <%= adminPass %>

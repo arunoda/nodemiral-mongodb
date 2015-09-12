@@ -4,9 +4,10 @@ var _ = require('underscore');
 
 exports.install = function(vars, taskListOptions) {
   vars = vars || {}
-  vars.version = vars.version || "3.0.0";
+  vars.version = vars.version || "3.0.6";
   vars.options = _.clone(vars.options) || {};
-  vars.options.version = vars.version;
+  vars.options.dbpath = vars.options.dbpath || '/opt/nodemiral/mongodb/db';
+
   var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
 
   // Installation
@@ -14,16 +15,19 @@ exports.install = function(vars, taskListOptions) {
     script: path.resolve(__dirname, 'scripts/install.sh'),
     vars: {
       version: vars.version,
-      dbpath: vars.options.dbpath || '/opt/nodemiral/mongodb/db'
+      dbpath: vars.options.dbpath
     }
   });
 
-  vars.options.auth = true;
-  addConfigFile(taskList, vars.options);
-  taskList.execute('restart mongod', getRestartTask());
-
   // Create Admin User
   if(vars.adminPass) {
+    var initialOptions = _.pick(vars.options, "dbpath", "storageEngine");
+    initialOptions.port = 27017;
+    initialOptions.bind_ip = "127.0.0.1";
+
+    addConfigFile(taskList, initialOptions);
+    taskList.execute('restart mongod', getRestartTask());
+
     taskList.copy('copy script for admin user creation', {
       src: path.resolve(__dirname, 'scripts/set_admin_user.js'),
       dest: '/tmp/set_admin_user.js',
@@ -35,16 +39,22 @@ exports.install = function(vars, taskListOptions) {
     });
   }
 
+  // After the adminPass (set) if needed, we can add auth support and reload  
+  vars.options.auth = true;
+  addConfigFile(taskList, vars.options);
+  taskList.execute('restart mongod', getRestartTask());
+
   return taskList;
 };
 
 exports.configure = function(vars, taskListOptions) {
   var taskList = nodemiral.taskList("MongoDB Configurations", taskListOptions);
-  var mongoOptions = vars.options || {};
+  vars.options = vars.options || {};
+  vars.options.dbpath = vars.options.dbpath || '/opt/nodemiral/mongodb/db';
 
   //setting the keyFile
   if(vars.key) {
-    mongoOptions['keyFile'] = "/opt/nodemiral/mongodb/key_file";
+    vars.options['keyFile'] = "/opt/nodemiral/mongodb/key_file";
     taskList.executeScript('create key file', {
       script: path.resolve(__dirname, 'scripts/set_key_file.sh'),
       vars: {
@@ -54,7 +64,7 @@ exports.configure = function(vars, taskListOptions) {
   }
 
   //add production mongodb configuration
-  addConfigFile(taskList, mongoOptions);
+  addConfigFile(taskList, vars.options);
 
   //restart
   taskList.execute('restart mongod', getRestartTask());
@@ -63,7 +73,7 @@ exports.configure = function(vars, taskListOptions) {
 };
 
 exports.configureReplSet = function(vars, taskListOptions) {
-  var taskList = nodemiral.taskList("MongoDB Installation", taskListOptions);
+  var taskList = nodemiral.taskList("Configurating Replicaset", taskListOptions);
 
   taskList.copy('copy replSet configuration script', {
     src: path.resolve(__dirname, 'scripts/configure_replset.js'),
@@ -74,14 +84,28 @@ exports.configureReplSet = function(vars, taskListOptions) {
     }
   });
 
-  taskList.executeScript('configuring the replSet', {
-    script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
-    vars: {
-      adminPass: vars.adminPass
-    }
-  });
+  if(vars.pickPrimary) {
+    taskList.executeScript('configuring the replSet', {
+      script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
+      vars: {
+        adminPass: vars.adminPass,
+        dbHost: "<%= replSetPrimaryHost %>"
+      }
+    });
 
-  return taskList;
+    var getPrimaryHost = exports.getPrimaryHost(vars, taskListOptions);
+    return getPrimaryHost.concat([taskList], taskList._name);
+  } else {
+    taskList.executeScript('configuring the replSet', {
+      script: path.resolve(__dirname, 'scripts/configure_replset.sh'),
+      vars: {
+        adminPass: vars.adminPass,
+        dbHost: "127.0.0.1"
+      }
+    });
+
+    return taskList;
+  }
 };
 
 exports.setUsers = function(vars, taskListOptions) {
@@ -110,7 +134,7 @@ exports.setUsers = function(vars, taskListOptions) {
     taskList.executeScript('setting users', {
       script: path.resolve(__dirname, 'scripts/set_users.sh'),
       vars: {
-        dbHost: "{{replSetPrimaryHost}}",
+        dbHost: "<%= replSetPrimaryHost %>",
         adminPass: vars.adminPass
       }
     });
@@ -150,6 +174,36 @@ exports.getPrimaryHost = function(vars, taskListOptions) {
   return taskList;
 };
 
+exports.setUpBackupBox = function(vars, taskListOptions) {
+  var taskList = nodemiral.taskList("Setup BackupBox", taskListOptions);
+  taskList.execute('install LVM2', {
+    command: "sudo apt-get install -y lvm2"
+  });
+
+  taskList.executeScript('setting up disks', {
+    script: path.resolve(__dirname, 'scripts/setup_backup_disks.sh'),
+    vars: {
+      dataDisk: vars.dataDisk,
+      backupDisk: vars.backupDisk
+    }
+  });
+
+  var cronjobDest = '/etc/cron.daily/take_snapshot.sh';
+  taskList.execute('setup cronjob permission', {
+    command: "sudo touch " + cronjobDest + " && sudo chown $USER " + cronjobDest
+  });
+
+  taskList.copy("adding snapshot cronjob", {
+    src: path.resolve(__dirname, 'scripts/take_snapshot.sh'),
+    dest: '/etc/cron.daily/take_snapshot.sh',
+    vars: {
+      expireAfter: vars.expireAfter || 5
+    }
+  });
+
+  return taskList;
+};
+
 function getRestartTask() {
   return {
     command: "(sudo stop mongod || :) && sudo start mongod"
@@ -159,9 +213,7 @@ function getRestartTask() {
 function addConfigFile(taskList, options) {
   options = options || {};
   var mongoOptions = {
-    dbpath: '/opt/nodemiral/mongodb/db',
     port: 27017,
-    auth: true,
     nohttpinterface: true
   };
 
@@ -169,16 +221,18 @@ function addConfigFile(taskList, options) {
     mongoOptions[key] = options[key];
   }
 
+  var tempFile = "/tmp/mongodb.conf"; 
+
   taskList.copy('copy mongodb configuration', {
     src: path.resolve(__dirname, 'templates/mongodb.conf'),
-    dest: '/tmp/mongod.conf',
+    dest: tempFile,
     vars: {
       options: mongoOptions
     }
   });
 
-  taskList.execute('move mongodb configuration', {
-    command: "sudo mv /tmp/mongod.conf /etc/mongod.conf"
+  taskList.execute('set mongodb configuration', {
+    command: "sudo mv " + tempFile + " /etc/mongod.conf"
   });
 
   taskList.execute('chown dbpath', {

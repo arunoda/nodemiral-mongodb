@@ -1,13 +1,23 @@
-var status = rs.status();
+var existingConf = null;
 
-var existingConf = rs.conf();
+try {
+  existingConf = rs.conf();
+} catch(ex) {
+  existingConf = null;
+}
 
+var status;
 if(existingConf) {
   existingConf.members = <%- JSON.stringify(members) %>;
-  rs.reconfig(existingConf, {force: true});
+  status = rs.reconfig(existingConf, {force: true});
 } else {
-  rs.initiate({
+  status = rs.initiate({
     _id: "<%= replSet %>",
     members: <%- JSON.stringify(members) %>
   });
+}
+
+if(!status.ok) {
+  printjson(status);
+  throw new Error("replSet initiatialization failed!");
 }
